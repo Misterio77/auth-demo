@@ -69,7 +69,7 @@ async fn post(
         .await
         .map_err(|e| e.flash_redirect(&err_redir))?;
 
-    cookies.add_private(new_session.into());
+    cookies.add_private(new_session);
 
     Ok(Redirect::to(redir.unwrap_or_else(|| "/".into())))
 }

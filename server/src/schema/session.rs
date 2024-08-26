@@ -110,9 +110,9 @@ impl TryFrom<Row> for Session {
 use rocket::http::Cookie;
 impl From<Session> for Cookie<'_> {
     fn from(session: Session) -> Self {
-        Cookie::build("session", session.id.to_string())
+        Cookie::build(("session", session.id.to_string()))
             .permanent()
-            .finish()
+            .into()
     }
 }
 
@@ -131,12 +131,12 @@ impl<'r> FromRequest<'r> for Session {
         let db = try_outcome!(request
             .guard::<Connection<Database>>()
             .await
-            .map_failure(ServerError::from));
+            .map_error(ServerError::from));
 
         let id = try_outcome!(cookies
             .get_private("session")
             .and_then(|cookie| cookie.value().parse::<Uuid>().ok())
-            .into_outcome(
+            .or_error(
                 ServerError::builder()
                     .code(Status::Unauthorized)
                     .message("You're not logged in")
@@ -145,7 +145,7 @@ impl<'r> FromRequest<'r> for Session {
 
         let session = try_outcome!(Session::authenticate(&db, id)
             .await
-            .into_outcome(Status::Unauthorized));
+            .or_error(Status::Unauthorized));
 
         request::Outcome::Success(session)
     }

@@ -137,14 +137,14 @@ impl<'r> FromRequest<'r> for ApiKey {
         let db = try_outcome!(request
             .guard::<Connection<Database>>()
             .await
-            .map_failure(ServerError::from));
+            .map_error(ServerError::from));
 
         let key = try_outcome!(request
             .headers()
             .get("Authorization")
             .next()
             .and_then(|h| h.split_whitespace().last().map(|k| k.to_string()))
-            .into_outcome(
+            .or_error(
                 ServerError::builder()
                     .code(Status::Unauthorized)
                     .message("You must supply an API Key")
@@ -153,7 +153,7 @@ impl<'r> FromRequest<'r> for ApiKey {
 
         let session = try_outcome!(ApiKey::authenticate(&db, key)
             .await
-            .into_outcome(Status::Unauthorized));
+            .or_error(Status::Unauthorized));
 
         request::Outcome::Success(session)
     }

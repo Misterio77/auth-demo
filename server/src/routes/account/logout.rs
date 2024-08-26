@@ -37,7 +37,7 @@ async fn post(
     }
     .map_err(|e| e.flash_redirect("/logout"))?;
 
-    cookies.remove_private(Cookie::named("session"));
+    cookies.remove_private(Cookie::from("session"));
 
     Ok(Redirect::to("/"))
 }
